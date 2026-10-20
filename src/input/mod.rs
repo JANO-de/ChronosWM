@@ -8,7 +8,7 @@ use input::event::gesture::GestureEventCoordinates as _;
 use niri_config::{
     Action, Bind, Binds, Config, Key, ModKey, Modifiers, MruDirection, SwitchBinds, Trigger,
 };
-use chronos_gesture_core::{Axis as GestureAxis, Out as GestureOut};
+use chronos_gesture_core::{Axis as GestureAxis, Edge as GestureEdge, Out as GestureOut};
 use niri_ipc::Event as IpcEvent;
 use niri_ipc::{GesturePhase, LayoutSwitchTarget};
 use smithay::backend::input::{
@@ -59,6 +59,9 @@ use crate::ui::mru::{WindowMru, WindowMruUi};
 use crate::ui::screenshot_ui::ScreenshotUi;
 use crate::utils::spawning::{spawn, spawn_sh};
 use crate::utils::{center, get_monotonic_time, CastSessionId, ResizeEdge};
+
+/// Bottom-edge swipe progress (1.0 = `edge_travel_px`) at which a swipe opens Overview instead of the dock.
+const CHRONOS_EDGE_OVERVIEW_PROGRESS: f64 = 1.8;
 
 pub mod backend_ext;
 pub mod click_grab;
@@ -4355,6 +4358,38 @@ impl State {
         self.compute_absolute_location(evt, self.niri.output_for_touch())
     }
 
+    /// Touch position relative to the touch output, and keep the recognizer's screen size in
+    /// sync with that output (edge swipes need the real size and output-local coordinates).
+    fn chronos_touch_pos(&mut self, pos: Point<f64, Logical>) -> (f64, f64) {
+        if let Some(output) = self.niri.output_for_touch().cloned() {
+            if let Some(geo) = self.niri.global_space.output_geometry(&output) {
+                self.niri
+                    .touch_gestures
+                    .set_screen((f64::from(geo.size.w), f64::from(geo.size.h)));
+                return (pos.x - f64::from(geo.loc.x), pos.y - f64::from(geo.loc.y));
+            }
+        }
+        (pos.x, pos.y)
+    }
+
+    /// Push an edge-swipe event to the IPC stream for the shell to animate.
+    fn chronos_edge_event(&self, edge: GestureEdge, phase: GesturePhase, progress: f64) {
+        let Some(ipc) = self.niri.ipc_server.as_ref() else {
+            return;
+        };
+        let edge = match edge {
+            GestureEdge::Top => "top",
+            GestureEdge::Bottom => "bottom",
+            GestureEdge::Left => "left",
+            GestureEdge::Right => "right",
+        };
+        ipc.send_event(IpcEvent::EdgeSwipe {
+            edge: edge.to_string(),
+            phase,
+            progress,
+        });
+    }
+
     /// Chronos Map A: dispatch gesture-core output to layout / mru / IPC.
     /// CAVEAT (untested, [SANDBOX]): fingers land as separate TouchDown events, so with the
     /// claim window open the 1st and 2nd finger still run the old single-touch path below
@@ -4362,9 +4397,20 @@ impl State {
     /// this fires `Out::Claim`. Not yet buffered/undone - needs a real touch device to confirm
     /// whether that's visible/glitchy before shipping.
     fn dispatch_chronos_gesture(&mut self, out: GestureOut) {
-        tracing::info!("chronos gesture out: {:?}", out);
+        match &out {
+            GestureOut::Update { .. } | GestureOut::EdgeUpdate { .. } => {
+                tracing::debug!("chronos gesture out: {:?}", out)
+            }
+            _ => tracing::info!("chronos gesture out: {:?}", out),
+        }
         match out {
-            GestureOut::Claim => {}
+            GestureOut::Claim => {
+                // Clients already got touch-down for fingers that landed before the claim.
+                // Cancel that sequence so the gesture can't leak into them as a tap.
+                if let Some(handle) = self.niri.seat.get_touch() {
+                    handle.cancel(self);
+                }
+            }
             GestureOut::Begin { fingers: 3, axis: GestureAxis::Horizontal }
             | GestureOut::Update { fingers: 3, axis: GestureAxis::Horizontal, .. } => {
                 if let GestureOut::Begin { .. } = out {
@@ -4411,15 +4457,18 @@ impl State {
                     self.niri.queue_redraw(&output);
                 }
             }
-            GestureOut::Begin { fingers: 4, axis: GestureAxis::Horizontal } => {
+            GestureOut::End { fingers: 4, axis: GestureAxis::Horizontal, total_dx, .. } => {
+                // Swipe left = next window, right = previous (quick switch, like Alt+Tab tap).
+                let direction = if total_dx < 0.0 {
+                    MruDirection::Forward
+                } else {
+                    MruDirection::Backward
+                };
                 self.do_action(
-                    Action::MruAdvance {
-                        direction: MruDirection::Forward,
-                        scope: None,
-                        filter: None,
-                    },
+                    Action::MruAdvance { direction, scope: None, filter: None },
                     false,
                 );
+                self.do_action(Action::MruConfirm, false);
             }
             GestureOut::End { fingers: 4, axis: GestureAxis::Vertical, total_dy, .. } => {
                 if total_dy < 0.0 {
@@ -4433,11 +4482,25 @@ impl State {
                     }
                 }
             }
-            GestureOut::Cancel { .. } | GestureOut::EdgeBegin { .. }
-            | GestureOut::EdgeUpdate { .. } | GestureOut::EdgeEnd { .. } => {
-                // Edge-swipe variants of gesture-core are unused for Map A right now (niri
-                // has its own edge-swipe-free overview); left in for Office/Field later.
+            GestureOut::EdgeBegin { edge } => {
+                self.chronos_edge_event(edge, GesturePhase::Begin, 0.0);
             }
+            GestureOut::EdgeUpdate { edge, progress } => {
+                self.chronos_edge_event(edge, GesturePhase::Update, progress);
+            }
+            GestureOut::EdgeEnd { edge, progress, committed } => {
+                if !committed {
+                    self.chronos_edge_event(edge, GesturePhase::Cancel, progress);
+                } else {
+                    // Long bottom swipe = Overview (compositor-owned); everything else is
+                    // shell-owned, the shell reads edge + progress from the IPC event.
+                    if edge == GestureEdge::Bottom && progress >= CHRONOS_EDGE_OVERVIEW_PROGRESS {
+                        self.do_action(Action::OpenOverview, false);
+                    }
+                    self.chronos_edge_event(edge, GesturePhase::End, progress);
+                }
+            }
+            GestureOut::Cancel { .. } => {}
             _ => {}
         }
     }
@@ -4453,11 +4516,9 @@ impl State {
 
         let t_ms = evt.time().micros() / 1000;
         let was_claimed = self.niri.touch_gestures.is_claimed();
-        let gesture_out = self
-            .niri
-            .touch_gestures
-            .down(slot, (pos.x, pos.y), t_ms);
-        tracing::info!("chronos touch down t_ms={} out={:?}", t_ms, gesture_out);
+        let local = self.chronos_touch_pos(pos);
+        let gesture_out = self.niri.touch_gestures.down(slot, local, t_ms);
+        tracing::debug!("chronos touch down t_ms={} out={:?}", t_ms, gesture_out);
         for out in gesture_out {
             self.dispatch_chronos_gesture(out);
         }
@@ -4634,10 +4695,8 @@ impl State {
         let slot = evt.slot();
 
         let t_ms = evt.time().micros() / 1000;
-        let gesture_out = self
-            .niri
-            .touch_gestures
-            .motion(slot, (pos.x, pos.y), t_ms);
+        let local = self.chronos_touch_pos(pos);
+        let gesture_out = self.niri.touch_gestures.motion(slot, local, t_ms);
         for out in gesture_out {
             self.dispatch_chronos_gesture(out);
         }

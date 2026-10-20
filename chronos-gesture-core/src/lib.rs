@@ -197,6 +197,13 @@ impl<S: Copy + Eq + Hash> Recognizer<S> {
                 // 2 fingers so far, or a late finger: clients own it (pinch/scroll); a 3rd finger
                 // may still arrive inside the claim window. Idle never emits events by itself.
             }
+            State::EdgeCandidate { .. } if n >= 3 && in_window => {
+                // First finger happened to land in the edge band, but 3+ fingers arrived
+                // together: this is a multi-finger swipe, not an edge swipe.
+                let c = self.centroid();
+                self.state = State::Multi { fingers: n, start: c, last: c, axis: None, history: vec![] };
+                out.push(Out::Claim);
+            }
             State::EdgeCandidate { .. } => {
                 self.state = State::Passthrough;
             }
@@ -447,6 +454,23 @@ mod tests {
         let o = r.motion(0, (960.0, 1270.0), 16);
         assert!(o.is_empty());
         assert!(!r.is_claimed());
+    }
+
+    #[test]
+    fn three_fingers_with_first_in_edge_band_is_multi() {
+        let mut r = rec();
+        r.down(0, (900.0, 1270.0), 0); // edge band
+        r.down(1, (960.0, 1100.0), 20);
+        let o = r.down(2, (1020.0, 1100.0), 40);
+        assert_eq!(o, vec![Out::Claim]);
+        let mut o = vec![];
+        for s in 1..=10 {
+            let d = s as f64 * 20.0;
+            o.extend(r.motion(0, (900.0 + d, 1270.0), 100 + s as u64 * 16));
+            o.extend(r.motion(1, (960.0 + d, 1100.0), 100 + s as u64 * 16));
+            o.extend(r.motion(2, (1020.0 + d, 1100.0), 100 + s as u64 * 16));
+        }
+        assert!(o.iter().any(|e| matches!(e, Out::Begin { fingers: 3, axis: Axis::Horizontal })));
     }
 
     #[test]

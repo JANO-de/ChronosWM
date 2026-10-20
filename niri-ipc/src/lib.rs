@@ -1628,7 +1628,9 @@ pub enum CastTarget {
 #[cfg_attr(feature = "json-schema", derive(schemars::JsonSchema))]
 pub enum GesturePhase {
     Begin,
+    Update,
     End,
+    Cancel,
 }
 
 /// A compositor event.
@@ -1644,6 +1646,13 @@ pub enum Event {
         name: String,
         fingers: u8,
         phase: GesturePhase,
+    },
+    /// A touchscreen edge swipe (Chronos). `edge` is "top" | "bottom" | "left" | "right";
+    /// `progress` is 0..1+ along the inward direction (1.0 = edge_travel_px).
+    EdgeSwipe {
+        edge: String,
+        phase: GesturePhase,
+        progress: f64,
     },
     /// The workspace configuration has changed.
     WorkspacesChanged {

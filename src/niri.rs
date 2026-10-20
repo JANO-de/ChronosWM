@@ -2876,6 +2876,7 @@ impl Niri {
             touch_gestures: TouchGestureRecognizer::new({
                 let mut c = chronos_gesture_core::Config::new((1920.0, 1080.0));
                 c.claim_window_ms = 600; // was 150: 3 fingers rarely land that fast
+                c.edge_px = 32.0; // touch edge band for edge swipes
                 c
             }),
             overview_scroll_swipe_gesture: ScrollSwipeGesture::new(),
