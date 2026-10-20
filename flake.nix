@@ -42,6 +42,7 @@
           src = lib.fileset.toSource {
             root = ./.;
             fileset = lib.fileset.unions [
+              ./chronos-gesture-core
               ./niri-config
               ./niri-ipc
               ./niri-visual-tests
