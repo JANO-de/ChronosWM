@@ -4362,12 +4362,13 @@ impl State {
     /// this fires `Out::Claim`. Not yet buffered/undone - needs a real touch device to confirm
     /// whether that's visible/glitchy before shipping.
     fn dispatch_chronos_gesture(&mut self, out: GestureOut) {
+        tracing::info!("chronos gesture out: {:?}", out);
         match out {
             GestureOut::Claim => {}
             GestureOut::Begin { fingers: 3, axis: GestureAxis::Horizontal }
             | GestureOut::Update { fingers: 3, axis: GestureAxis::Horizontal, .. } => {
                 if let GestureOut::Begin { .. } = out {
-                    if let Some(output) = self.niri.output_under_cursor() {
+                    if let Some(output) = self.niri.output_for_touch().cloned() {
                         self.niri
                             .layout
                             .view_offset_gesture_begin(&output, None, false);
@@ -4387,7 +4388,7 @@ impl State {
                 }
             }
             GestureOut::Begin { fingers: 3, axis: GestureAxis::Vertical } => {
-                if let Some(output) = self.niri.output_under_cursor() {
+                if let Some(output) = self.niri.output_for_touch().cloned() {
                     self.niri
                         .layout
                         .workspace_switch_gesture_begin(&output, false);
@@ -4456,6 +4457,7 @@ impl State {
             .niri
             .touch_gestures
             .down(slot, (pos.x, pos.y), t_ms);
+        tracing::info!("chronos touch down t_ms={} out={:?}", t_ms, gesture_out);
         for out in gesture_out {
             self.dispatch_chronos_gesture(out);
         }
