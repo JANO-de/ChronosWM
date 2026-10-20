@@ -4687,6 +4687,11 @@ impl State {
         let Some(handle) = self.niri.seat.get_touch() else {
             return;
         };
+        // Reset the chronos recognizer so a cancel from the device can't leave it stuck.
+        let gesture_out = self.niri.touch_gestures.cancel();
+        for out in gesture_out {
+            self.dispatch_chronos_gesture(out);
+        }
         handle.cancel(self);
     }
 
