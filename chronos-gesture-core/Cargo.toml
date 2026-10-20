@@ -1,0 +1,5 @@
+[package]
+name = "chronos-gesture-core"
+version = "0.1.0"
+edition = "2021"
+description = "Pure touch-gesture state machine for Chronos (no compositor dependencies, unit-testable)."

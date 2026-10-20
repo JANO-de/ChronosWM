@@ -1623,10 +1623,28 @@ pub enum CastTarget {
     },
 }
 
+/// Phase of a Chronos touch gesture pushed over the event stream.
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "json-schema", derive(schemars::JsonSchema))]
+pub enum GesturePhase {
+    Begin,
+    End,
+}
+
 /// A compositor event.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[cfg_attr(feature = "json-schema", derive(schemars::JsonSchema))]
 pub enum Event {
+    /// A shell-owned gesture (one the layout has no concept of, e.g. the 4-finger-up Archive
+    /// swipe in Chronos's niri-native gesture map) was triggered. Layout-owned gestures (column
+    /// scroll, Timeline switch, window switcher) go through the existing layout calls instead and
+    /// don't need an event.
+    GestureTriggered {
+        /// Gesture name, e.g. "archive".
+        name: String,
+        fingers: u8,
+        phase: GesturePhase,
+    },
     /// The workspace configuration has changed.
     WorkspacesChanged {
         /// The new workspace configuration.

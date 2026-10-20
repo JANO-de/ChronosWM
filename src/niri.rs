@@ -21,7 +21,7 @@ use niri_config::{
     WorkspaceReference, Xkb,
 };
 use smithay::backend::allocator::Fourcc;
-use smithay::backend::input::{InputTime, Keycode};
+use smithay::backend::input::{InputTime, Keycode, TouchSlot};
 use smithay::backend::renderer::damage::OutputDamageTracker;
 use smithay::backend::renderer::element::memory::MemoryRenderBufferRenderElement;
 use smithay::backend::renderer::element::surface::WaylandSurfaceRenderElement;
@@ -149,6 +149,7 @@ use crate::input::{
     TabletData,
 };
 use crate::ipc::server::IpcServer;
+use chronos_gesture_core::Recognizer as TouchGestureRecognizer;
 use crate::layer::mapped::LayerSurfaceRenderElement;
 use crate::layer::MappedLayer;
 use crate::layout::tile::TileRenderElement;
@@ -419,6 +420,9 @@ pub struct Niri {
     pub pointer_constraint_position_hint: Option<Point<f64, Logical>>,
     pub tablet_cursor_location: Option<Point<f64, Logical>>,
     pub gesture_swipe_3f_cumulative: Option<(f64, f64)>,
+    /// Chronos: recognizes 3f/4f touch gestures (niri's own touch path only handles 1 finger).
+    /// Map A: 3f horiz -> columns, 3f vert -> Timelines, 4f horiz -> switcher, 4f up -> Archive.
+    pub touch_gestures: TouchGestureRecognizer<TouchSlot>,
     pub overview_scroll_swipe_gesture: ScrollSwipeGesture,
     pub vertical_wheel_tracker: ScrollTracker,
     pub horizontal_wheel_tracker: ScrollTracker,
@@ -2869,6 +2873,9 @@ impl Niri {
             pointer_constraint_position_hint: None,
             tablet_cursor_location: None,
             gesture_swipe_3f_cumulative: None,
+            touch_gestures: TouchGestureRecognizer::new(chronos_gesture_core::Config::new(
+                (1920.0, 1080.0), // updated via touch_gestures.set_screen() on output change
+            )),
             overview_scroll_swipe_gesture: ScrollSwipeGesture::new(),
             vertical_wheel_tracker: ScrollTracker::new(120),
             horizontal_wheel_tracker: ScrollTracker::new(120),

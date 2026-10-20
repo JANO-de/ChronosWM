@@ -8,7 +8,9 @@ use input::event::gesture::GestureEventCoordinates as _;
 use niri_config::{
     Action, Bind, Binds, Config, Key, ModKey, Modifiers, MruDirection, SwitchBinds, Trigger,
 };
-use niri_ipc::LayoutSwitchTarget;
+use chronos_gesture_core::{Axis as GestureAxis, Out as GestureOut};
+use niri_ipc::Event as IpcEvent;
+use niri_ipc::{GesturePhase, LayoutSwitchTarget};
 use smithay::backend::input::{
     AbsolutePositionEvent, Axis, AxisSource, ButtonState, Device, DeviceCapability, Event,
     GestureBeginEvent, GestureEndEvent, GesturePinchUpdateEvent as _, GestureSwipeUpdateEvent as _,
@@ -4353,6 +4355,92 @@ impl State {
         self.compute_absolute_location(evt, self.niri.output_for_touch())
     }
 
+    /// Chronos Map A: dispatch gesture-core output to layout / mru / IPC.
+    /// CAVEAT (untested, [SANDBOX]): fingers land as separate TouchDown events, so with the
+    /// claim window open the 1st and 2nd finger still run the old single-touch path below
+    /// (possible activate_window/TouchOverviewGrab) before the 3rd finger upgrades to Multi and
+    /// this fires `Out::Claim`. Not yet buffered/undone - needs a real touch device to confirm
+    /// whether that's visible/glitchy before shipping.
+    fn dispatch_chronos_gesture(&mut self, out: GestureOut) {
+        match out {
+            GestureOut::Claim => {}
+            GestureOut::Begin { fingers: 3, axis: GestureAxis::Horizontal }
+            | GestureOut::Update { fingers: 3, axis: GestureAxis::Horizontal, .. } => {
+                if let GestureOut::Begin { .. } = out {
+                    if let Some(output) = self.niri.output_under_cursor() {
+                        self.niri
+                            .layout
+                            .view_offset_gesture_begin(&output, None, false);
+                    }
+                } else if let GestureOut::Update { dx, .. } = out {
+                    let timestamp = get_monotonic_time();
+                    if let Some(o) = self.niri.layout.view_offset_gesture_update(dx, timestamp, false) {
+                        if let Some(output) = o {
+                            self.niri.queue_redraw(&output);
+                        }
+                    }
+                }
+            }
+            GestureOut::End { fingers: 3, axis: GestureAxis::Horizontal, .. } => {
+                if let Some(output) = self.niri.layout.view_offset_gesture_end(Some(false)) {
+                    self.niri.queue_redraw(&output);
+                }
+            }
+            GestureOut::Begin { fingers: 3, axis: GestureAxis::Vertical } => {
+                if let Some(output) = self.niri.output_under_cursor() {
+                    self.niri
+                        .layout
+                        .workspace_switch_gesture_begin(&output, false);
+                }
+            }
+            GestureOut::Update { fingers: 3, axis: GestureAxis::Vertical, dy, .. } => {
+                let timestamp = get_monotonic_time();
+                if let Some(o) = self
+                    .niri
+                    .layout
+                    .workspace_switch_gesture_update(dy, timestamp, false)
+                {
+                    if let Some(output) = o {
+                        self.niri.queue_redraw(&output);
+                    }
+                }
+            }
+            GestureOut::End { fingers: 3, axis: GestureAxis::Vertical, .. } => {
+                if let Some(output) = self.niri.layout.workspace_switch_gesture_end(Some(false)) {
+                    self.niri.queue_redraw(&output);
+                }
+            }
+            GestureOut::Begin { fingers: 4, axis: GestureAxis::Horizontal } => {
+                self.do_action(
+                    Action::MruAdvance {
+                        direction: MruDirection::Forward,
+                        scope: None,
+                        filter: None,
+                    },
+                    false,
+                );
+            }
+            GestureOut::End { fingers: 4, axis: GestureAxis::Vertical, total_dy, .. } => {
+                if total_dy < 0.0 {
+                    // Archive has no layout meaning - shell owns it, so just notify over IPC.
+                    if let Some(ipc) = self.niri.ipc_server.as_ref() {
+                        ipc.send_event(IpcEvent::GestureTriggered {
+                            name: "archive".to_string(),
+                            fingers: 4,
+                            phase: GesturePhase::End,
+                        });
+                    }
+                }
+            }
+            GestureOut::Cancel { .. } | GestureOut::EdgeBegin { .. }
+            | GestureOut::EdgeUpdate { .. } | GestureOut::EdgeEnd { .. } => {
+                // Edge-swipe variants of gesture-core are unused for Map A right now (niri
+                // has its own edge-swipe-free overview); left in for Office/Field later.
+            }
+            _ => {}
+        }
+    }
+
     fn on_touch_down<I: InputBackend>(&mut self, evt: I::TouchDownEvent) {
         let Some(handle) = self.niri.seat.get_touch() else {
             return;
@@ -4361,6 +4449,21 @@ impl State {
             return;
         };
         let slot = evt.slot();
+
+        let t_ms = evt.time().micros() / 1000;
+        let was_claimed = self.niri.touch_gestures.is_claimed();
+        let gesture_out = self
+            .niri
+            .touch_gestures
+            .down(slot, (pos.x, pos.y), t_ms);
+        for out in gesture_out {
+            self.dispatch_chronos_gesture(out);
+        }
+        if was_claimed || self.niri.touch_gestures.is_claimed() {
+            // Claimed by a 3f/4f gesture - see dispatch_chronos_gesture's CAVEAT doc comment
+            // about the 1st/2nd finger already having run the old path below.
+            return;
+        }
 
         let serial = SERIAL_COUNTER.next_serial();
 
@@ -4487,6 +4590,20 @@ impl State {
         };
         let slot = evt.slot();
 
+        let t_ms = evt.time().micros() / 1000;
+        let was_claimed = self.niri.touch_gestures.is_claimed();
+        let gesture_out = self.niri.touch_gestures.up(slot, t_ms);
+        for out in gesture_out {
+            self.dispatch_chronos_gesture(out);
+        }
+        if was_claimed {
+            let serial = SERIAL_COUNTER.next_serial();
+            if let Some(handle) = self.niri.seat.get_touch() {
+                handle.up(self, &UpEvent { slot, serial, time: evt.time() });
+            }
+            return;
+        }
+
         if let Some(capture) = self.niri.screenshot_ui.pointer_up(Some(slot)) {
             if capture {
                 self.confirm_screenshot(true);
@@ -4513,6 +4630,18 @@ impl State {
             return;
         };
         let slot = evt.slot();
+
+        let t_ms = evt.time().micros() / 1000;
+        let gesture_out = self
+            .niri
+            .touch_gestures
+            .motion(slot, (pos.x, pos.y), t_ms);
+        for out in gesture_out {
+            self.dispatch_chronos_gesture(out);
+        }
+        if self.niri.touch_gestures.is_claimed() {
+            return;
+        }
 
         if let Some(output) = self.niri.screenshot_ui.selection_output().cloned() {
             let geom = self.niri.global_space.output_geometry(&output).unwrap();
