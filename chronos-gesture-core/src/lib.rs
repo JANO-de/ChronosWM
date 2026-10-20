@@ -197,12 +197,11 @@ impl<S: Copy + Eq + Hash> Recognizer<S> {
                 // 2 fingers so far, or a late finger: clients own it (pinch/scroll); a 3rd finger
                 // may still arrive inside the claim window. Idle never emits events by itself.
             }
-            State::EdgeCandidate { .. } if n >= 3 && in_window => {
-                // First finger happened to land in the edge band, but 3+ fingers arrived
-                // together: this is a multi-finger swipe, not an edge swipe.
-                let c = self.centroid();
-                self.state = State::Multi { fingers: n, start: c, last: c, axis: None, history: vec![] };
-                out.push(Out::Claim);
+            State::EdgeCandidate { .. } if n == 2 && in_window => {
+                // First finger landed in the edge band, but a 2nd one followed quickly: this is
+                // no longer an edge swipe. Behave like Idle so a 3rd finger inside the claim
+                // window can still start a multi-finger swipe.
+                self.state = State::Idle;
             }
             State::EdgeCandidate { .. } => {
                 self.state = State::Passthrough;
