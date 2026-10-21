@@ -59,7 +59,7 @@ Item {
         text: "= " + root.calc; color: Theme.ink; font.family: Theme.mono; font.pixelSize: 16
     }
     ListView {
-        anchors { top: calcLine.bottom; topMargin: 6; left: parent.left; right: parent.right; bottom: parent.bottom; bottomMargin: UiState.osk ? 250 : 0 }
+        anchors { top: calcLine.bottom; topMargin: 6; left: parent.left; right: parent.right; bottom: parent.bottom; bottomMargin: UiState.osk ? UiState.oskH : 0 }
         clip: true
         model: root.results
         boundsBehavior: Flickable.StopAtBounds
