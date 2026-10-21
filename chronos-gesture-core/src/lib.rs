@@ -33,7 +33,8 @@ pub enum Edge {
 pub struct Config {
     /// Screen size (w, h). / Tamaño de pantalla.
     pub screen: (f64, f64),
-    /// Extra fingers must land within this time of the first one to count as a multi-finger gesture.
+    /// Extra fingers must land within this time of the first one to count as a multi-finger
+    /// gesture.
     pub claim_window_ms: u64,
     /// Distance before a gesture picks its axis (GNOME Shell uses 16).
     pub threshold_px: f64,
@@ -66,17 +67,46 @@ impl Config {
 pub enum Out {
     /// A gesture took over: cancel the touch sequence sent to clients.
     Claim,
-    Begin { fingers: u8, axis: Axis },
+    Begin {
+        fingers: u8,
+        axis: Axis,
+    },
     /// `dx/dy`: movement since the previous update; `total_*`: since gesture start (centroid).
-    Update { fingers: u8, axis: Axis, dx: f64, dy: f64, total_dx: f64, total_dy: f64 },
-    /// `total_*`: net centroid travel since gesture start. `velocity_*` in px/s over the last ~150 ms.
-    End { fingers: u8, axis: Axis, total_dx: f64, total_dy: f64, velocity_x: f64, velocity_y: f64 },
+    Update {
+        fingers: u8,
+        axis: Axis,
+        dx: f64,
+        dy: f64,
+        total_dx: f64,
+        total_dy: f64,
+    },
+    /// `total_*`: net centroid travel since gesture start. `velocity_*` in px/s over the last ~150
+    /// ms.
+    End {
+        fingers: u8,
+        axis: Axis,
+        total_dx: f64,
+        total_dy: f64,
+        velocity_x: f64,
+        velocity_y: f64,
+    },
     /// Multi-finger touch that never became a swipe (e.g. a 3-finger tap).
-    Cancel { fingers: u8 },
-    EdgeBegin { edge: Edge },
+    Cancel {
+        fingers: u8,
+    },
+    EdgeBegin {
+        edge: Edge,
+    },
     /// `progress` is 0..1 (can exceed 1 slightly) along the inward direction.
-    EdgeUpdate { edge: Edge, progress: f64 },
-    EdgeEnd { edge: Edge, progress: f64, committed: bool },
+    EdgeUpdate {
+        edge: Edge,
+        progress: f64,
+    },
+    EdgeEnd {
+        edge: Edge,
+        progress: f64,
+        committed: bool,
+    },
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -90,8 +120,16 @@ enum State {
     /// Touch owned by clients until all fingers lift (pinch, scroll, tap...).
     Passthrough,
     /// First finger started at an edge; waiting to see if it moves inward.
-    EdgeCandidate { edge: Edge, start: (f64, f64) },
-    EdgeActive { edge: Edge, start: (f64, f64), progress: f64, history: Vec<(u64, f64)> },
+    EdgeCandidate {
+        edge: Edge,
+        start: (f64, f64),
+    },
+    EdgeActive {
+        edge: Edge,
+        start: (f64, f64),
+        progress: f64,
+        history: Vec<(u64, f64)>,
+    },
     /// 3+ fingers landed together; axis may not be decided yet.
     Multi {
         fingers: u8,
@@ -117,7 +155,12 @@ const HISTORY_MS: u64 = 150;
 
 impl<S: Copy + Eq + Hash> Recognizer<S> {
     pub fn new(cfg: Config) -> Self {
-        Self { cfg, slots: HashMap::new(), state: State::Idle, first_down_ms: 0 }
+        Self {
+            cfg,
+            slots: HashMap::new(),
+            state: State::Idle,
+            first_down_ms: 0,
+        }
     }
 
     pub fn set_screen(&mut self, screen: (f64, f64)) {
@@ -126,7 +169,10 @@ impl<S: Copy + Eq + Hash> Recognizer<S> {
 
     fn centroid(&self) -> (f64, f64) {
         let n = self.slots.len().max(1) as f64;
-        let (sx, sy) = self.slots.values().fold((0., 0.), |a, s| (a.0 + s.last.0, a.1 + s.last.1));
+        let (sx, sy) = self
+            .slots
+            .values()
+            .fold((0., 0.), |a, s| (a.0 + s.last.0, a.1 + s.last.1));
         (sx / n, sy / n)
     }
 
@@ -176,18 +222,37 @@ impl<S: Copy + Eq + Hash> Recognizer<S> {
         match &mut self.state {
             State::Idle if n >= 3 && in_window => {
                 let c = self.centroid();
-                self.state = State::Multi { fingers: n, start: c, last: c, axis: None, history: vec![] };
+                self.state = State::Multi {
+                    fingers: n,
+                    start: c,
+                    last: c,
+                    axis: None,
+                    history: vec![],
+                };
                 out.push(Out::Claim);
             }
-            State::Multi { fingers, axis: None, .. } if n > *fingers && in_window => {
+            State::Multi {
+                fingers,
+                axis: None,
+                ..
+            } if n > *fingers && in_window => {
                 // Extra finger while undecided: upgrade 3 -> 4. Re-anchor centroid.
                 *fingers = n;
                 let c = {
                     let k = self.slots.len() as f64;
-                    let (sx, sy) = self.slots.values().fold((0., 0.), |a, s| (a.0 + s.last.0, a.1 + s.last.1));
+                    let (sx, sy) = self
+                        .slots
+                        .values()
+                        .fold((0., 0.), |a, s| (a.0 + s.last.0, a.1 + s.last.1));
                     (sx / k, sy / k)
                 };
-                if let State::Multi { start, last, history, .. } = &mut self.state {
+                if let State::Multi {
+                    start,
+                    last,
+                    history,
+                    ..
+                } = &mut self.state
+                {
                     *start = c;
                     *last = c;
                     history.clear();
@@ -235,7 +300,12 @@ impl<S: Copy + Eq + Hash> Recognizer<S> {
                 };
                 if inward >= thr && inward >= lateral {
                     let progress = inward / travel;
-                    self.state = State::EdgeActive { edge, start, progress, history: vec![(t_ms, inward)] };
+                    self.state = State::EdgeActive {
+                        edge,
+                        start,
+                        progress,
+                        history: vec![(t_ms, inward)],
+                    };
                     out.push(Out::Claim);
                     out.push(Out::EdgeBegin { edge });
                     out.push(Out::EdgeUpdate { edge, progress });
@@ -244,26 +314,54 @@ impl<S: Copy + Eq + Hash> Recognizer<S> {
                     self.state = State::Passthrough;
                 }
             }
-            State::EdgeActive { edge, start, progress, history } => {
+            State::EdgeActive {
+                edge,
+                start,
+                progress,
+                history,
+            } => {
                 let inward = Self::inward(*edge, *start, pos).max(0.0);
                 *progress = inward / travel;
                 history.push((t_ms, inward));
                 history.retain(|(t, _)| t_ms - *t <= HISTORY_MS);
-                out.push(Out::EdgeUpdate { edge: *edge, progress: *progress });
+                out.push(Out::EdgeUpdate {
+                    edge: *edge,
+                    progress: *progress,
+                });
             }
-            State::Multi { fingers, start, last, axis, history } => {
+            State::Multi {
+                fingers,
+                start,
+                last,
+                axis,
+                history,
+            } => {
                 let (dx, dy) = (c.0 - last.0, c.1 - last.1);
                 *last = c;
                 history.push((t_ms, c.0, c.1));
                 history.retain(|(t, _, _)| t_ms - *t <= HISTORY_MS);
                 let (tx, ty) = (c.0 - start.0, c.1 - start.1);
                 if axis.is_none() && tx.hypot(ty) >= thr {
-                    let a = if tx.abs() > ty.abs() { Axis::Horizontal } else { Axis::Vertical };
+                    let a = if tx.abs() > ty.abs() {
+                        Axis::Horizontal
+                    } else {
+                        Axis::Vertical
+                    };
                     *axis = Some(a);
-                    out.push(Out::Begin { fingers: *fingers, axis: a });
+                    out.push(Out::Begin {
+                        fingers: *fingers,
+                        axis: a,
+                    });
                 }
                 if let Some(a) = *axis {
-                    out.push(Out::Update { fingers: *fingers, axis: a, dx, dy, total_dx: tx, total_dy: ty });
+                    out.push(Out::Update {
+                        fingers: *fingers,
+                        axis: a,
+                        dx,
+                        dy,
+                        total_dx: tx,
+                        total_dy: ty,
+                    });
                 }
             }
             _ => {}
@@ -279,16 +377,32 @@ impl<S: Copy + Eq + Hash> Recognizer<S> {
         let all_up = self.slots.is_empty();
         let state = std::mem::replace(&mut self.state, State::Done);
         self.state = match state {
-            State::EdgeActive { edge, progress, history, .. } => {
+            State::EdgeActive {
+                edge,
+                progress,
+                history,
+                ..
+            } => {
                 let v = match (history.first(), history.last()) {
                     (Some(a), Some(b)) if b.0 > a.0 => (b.1 - a.1) / ((b.0 - a.0) as f64 / 1000.0),
                     _ => 0.0,
                 };
-                let committed = progress >= self.cfg.edge_commit_progress || v >= self.cfg.edge_commit_velocity;
-                out.push(Out::EdgeEnd { edge, progress, committed });
+                let committed =
+                    progress >= self.cfg.edge_commit_progress || v >= self.cfg.edge_commit_velocity;
+                out.push(Out::EdgeEnd {
+                    edge,
+                    progress,
+                    committed,
+                });
                 State::Done
             }
-            State::Multi { fingers, start, last, axis, history } => {
+            State::Multi {
+                fingers,
+                start,
+                last,
+                axis,
+                history,
+            } => {
                 match axis {
                     Some(a) => {
                         let (vx, vy) = match (history.first(), history.last()) {
@@ -324,7 +438,13 @@ impl<S: Copy + Eq + Hash> Recognizer<S> {
         self.slots.clear();
         let state = std::mem::replace(&mut self.state, State::Idle);
         match state {
-            State::Multi { fingers, start, last, axis: Some(a), .. } => vec![Out::End {
+            State::Multi {
+                fingers,
+                start,
+                last,
+                axis: Some(a),
+                ..
+            } => vec![Out::End {
                 fingers,
                 axis: a,
                 total_dx: last.0 - start.0,
@@ -333,15 +453,21 @@ impl<S: Copy + Eq + Hash> Recognizer<S> {
                 velocity_y: 0.0,
             }],
             State::Multi { fingers, .. } => vec![Out::Cancel { fingers }],
-            State::EdgeActive { edge, progress, .. } => vec![Out::EdgeEnd { edge, progress, committed: false }],
+            State::EdgeActive { edge, progress, .. } => vec![Out::EdgeEnd {
+                edge,
+                progress,
+                committed: false,
+            }],
             _ => vec![],
         }
     }
 
     /// True while a gesture owns the touch (the compositor must not forward events to clients).
     pub fn is_claimed(&self) -> bool {
-        matches!(self.state, State::Multi { .. } | State::EdgeActive { .. } | State::Done)
-            && !self.slots.is_empty()
+        matches!(
+            self.state,
+            State::Multi { .. } | State::EdgeActive { .. } | State::Done
+        ) && !self.slots.is_empty()
     }
 }
 
@@ -363,7 +489,11 @@ mod tests {
         for s in 1..=steps {
             for i in 0..n {
                 let f = s as f64 / steps as f64;
-                o.extend(r.motion(i, (800.0 + i as f64 * 40.0 + dx * f, 600.0 + dy * f), 100 + s as u64 * 16));
+                o.extend(r.motion(
+                    i,
+                    (800.0 + i as f64 * 40.0 + dx * f, 600.0 + dy * f),
+                    100 + s as u64 * 16,
+                ));
             }
         }
         for i in 0..n {
@@ -377,8 +507,18 @@ mod tests {
         let mut r = rec();
         let o = swipe(&mut r, 3, 300.0, 0.0);
         assert_eq!(o[0], Out::Claim);
-        assert!(o.contains(&Out::Begin { fingers: 3, axis: Axis::Horizontal }));
-        assert!(matches!(o.last().unwrap(), Out::End { fingers: 3, axis: Axis::Horizontal, .. }));
+        assert!(o.contains(&Out::Begin {
+            fingers: 3,
+            axis: Axis::Horizontal
+        }));
+        assert!(matches!(
+            o.last().unwrap(),
+            Out::End {
+                fingers: 3,
+                axis: Axis::Horizontal,
+                ..
+            }
+        ));
         assert!(!r.is_claimed());
     }
 
@@ -386,8 +526,13 @@ mod tests {
     fn four_finger_up_is_vertical() {
         let mut r = rec();
         let o = swipe(&mut r, 4, 0.0, -300.0);
-        assert!(o.contains(&Out::Begin { fingers: 4, axis: Axis::Vertical }));
-        assert!(o.iter().any(|e| matches!(e, Out::End { fingers: 4, velocity_y, .. } if *velocity_y < 0.0)));
+        assert!(o.contains(&Out::Begin {
+            fingers: 4,
+            axis: Axis::Vertical
+        }));
+        assert!(o
+            .iter()
+            .any(|e| matches!(e, Out::End { fingers: 4, velocity_y, .. } if *velocity_y < 0.0)));
     }
 
     #[test]
@@ -431,7 +576,14 @@ mod tests {
         o.extend(r.up(0, 200));
         assert_eq!(o[0], Out::Claim);
         assert_eq!(o[1], Out::EdgeBegin { edge: Edge::Bottom });
-        assert!(matches!(o.last().unwrap(), Out::EdgeEnd { edge: Edge::Bottom, committed: true, .. }));
+        assert!(matches!(
+            o.last().unwrap(),
+            Out::EdgeEnd {
+                edge: Edge::Bottom,
+                committed: true,
+                ..
+            }
+        ));
     }
 
     #[test]
@@ -443,7 +595,13 @@ mod tests {
             o.extend(r.motion(0, (900.0, 1270.0 - s as f64 * 6.0), s as u64 * 200)); // slow, ~24px
         }
         o.extend(r.up(0, 1000));
-        assert!(matches!(o.last().unwrap(), Out::EdgeEnd { committed: false, .. }));
+        assert!(matches!(
+            o.last().unwrap(),
+            Out::EdgeEnd {
+                committed: false,
+                ..
+            }
+        ));
     }
 
     #[test]
@@ -469,7 +627,13 @@ mod tests {
             o.extend(r.motion(1, (960.0 + d, 1100.0), 100 + s as u64 * 16));
             o.extend(r.motion(2, (1020.0 + d, 1100.0), 100 + s as u64 * 16));
         }
-        assert!(o.iter().any(|e| matches!(e, Out::Begin { fingers: 3, axis: Axis::Horizontal })));
+        assert!(o.iter().any(|e| matches!(
+            e,
+            Out::Begin {
+                fingers: 3,
+                axis: Axis::Horizontal
+            }
+        )));
     }
 
     #[test]

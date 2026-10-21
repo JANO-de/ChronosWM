@@ -4,13 +4,12 @@ use std::collections::HashSet;
 use std::time::Duration;
 
 use calloop::timer::{TimeoutAction, Timer};
+use chronos_gesture_core::{Axis as GestureAxis, Edge as GestureEdge, Out as GestureOut};
 use input::event::gesture::GestureEventCoordinates as _;
 use niri_config::{
     Action, Bind, Binds, Config, Key, ModKey, Modifiers, MruDirection, SwitchBinds, Trigger,
 };
-use chronos_gesture_core::{Axis as GestureAxis, Edge as GestureEdge, Out as GestureOut};
-use niri_ipc::Event as IpcEvent;
-use niri_ipc::{GesturePhase, LayoutSwitchTarget};
+use niri_ipc::{Event as IpcEvent, GesturePhase, LayoutSwitchTarget};
 use smithay::backend::input::{
     AbsolutePositionEvent, Axis, AxisSource, ButtonState, Device, DeviceCapability, Event,
     GestureBeginEvent, GestureEndEvent, GesturePinchUpdateEvent as _, GestureSwipeUpdateEvent as _,
@@ -60,7 +59,8 @@ use crate::ui::screenshot_ui::ScreenshotUi;
 use crate::utils::spawning::{spawn, spawn_sh};
 use crate::utils::{center, get_monotonic_time, CastSessionId, ResizeEdge};
 
-/// Bottom-edge swipe progress (1.0 = `edge_travel_px`) at which a swipe opens Overview instead of the dock.
+/// Bottom-edge swipe progress (1.0 = `edge_travel_px`) at which a swipe opens Overview instead of
+/// the dock.
 const CHRONOS_EDGE_OVERVIEW_PROGRESS: f64 = 1.8;
 
 pub mod backend_ext;
@@ -4411,8 +4411,15 @@ impl State {
                     handle.cancel(self);
                 }
             }
-            GestureOut::Begin { fingers: 3, axis: GestureAxis::Horizontal }
-            | GestureOut::Update { fingers: 3, axis: GestureAxis::Horizontal, .. } => {
+            GestureOut::Begin {
+                fingers: 3,
+                axis: GestureAxis::Horizontal,
+            }
+            | GestureOut::Update {
+                fingers: 3,
+                axis: GestureAxis::Horizontal,
+                ..
+            } => {
                 if let GestureOut::Begin { .. } = out {
                     if let Some(output) = self.niri.output_for_touch().cloned() {
                         self.niri
@@ -4421,26 +4428,42 @@ impl State {
                     }
                 } else if let GestureOut::Update { dx, .. } = out {
                     let timestamp = get_monotonic_time();
-                    if let Some(o) = self.niri.layout.view_offset_gesture_update(dx, timestamp, false) {
+                    if let Some(o) = self
+                        .niri
+                        .layout
+                        .view_offset_gesture_update(dx, timestamp, false)
+                    {
                         if let Some(output) = o {
                             self.niri.queue_redraw(&output);
                         }
                     }
                 }
             }
-            GestureOut::End { fingers: 3, axis: GestureAxis::Horizontal, .. } => {
+            GestureOut::End {
+                fingers: 3,
+                axis: GestureAxis::Horizontal,
+                ..
+            } => {
                 if let Some(output) = self.niri.layout.view_offset_gesture_end(Some(false)) {
                     self.niri.queue_redraw(&output);
                 }
             }
-            GestureOut::Begin { fingers: 3, axis: GestureAxis::Vertical } => {
+            GestureOut::Begin {
+                fingers: 3,
+                axis: GestureAxis::Vertical,
+            } => {
                 if let Some(output) = self.niri.output_for_touch().cloned() {
                     self.niri
                         .layout
                         .workspace_switch_gesture_begin(&output, false);
                 }
             }
-            GestureOut::Update { fingers: 3, axis: GestureAxis::Vertical, dy, .. } => {
+            GestureOut::Update {
+                fingers: 3,
+                axis: GestureAxis::Vertical,
+                dy,
+                ..
+            } => {
                 let timestamp = get_monotonic_time();
                 if let Some(o) = self
                     .niri
@@ -4452,12 +4475,21 @@ impl State {
                     }
                 }
             }
-            GestureOut::End { fingers: 3, axis: GestureAxis::Vertical, .. } => {
+            GestureOut::End {
+                fingers: 3,
+                axis: GestureAxis::Vertical,
+                ..
+            } => {
                 if let Some(output) = self.niri.layout.workspace_switch_gesture_end(Some(false)) {
                     self.niri.queue_redraw(&output);
                 }
             }
-            GestureOut::End { fingers: 4, axis: GestureAxis::Horizontal, total_dx, .. } => {
+            GestureOut::End {
+                fingers: 4,
+                axis: GestureAxis::Horizontal,
+                total_dx,
+                ..
+            } => {
                 // Swipe left = next window, right = previous (quick switch, like Alt+Tab tap).
                 let direction = if total_dx < 0.0 {
                     MruDirection::Forward
@@ -4465,12 +4497,21 @@ impl State {
                     MruDirection::Backward
                 };
                 self.do_action(
-                    Action::MruAdvance { direction, scope: None, filter: None },
+                    Action::MruAdvance {
+                        direction,
+                        scope: None,
+                        filter: None,
+                    },
                     false,
                 );
                 self.do_action(Action::MruConfirm, false);
             }
-            GestureOut::End { fingers: 4, axis: GestureAxis::Vertical, total_dy, .. } => {
+            GestureOut::End {
+                fingers: 4,
+                axis: GestureAxis::Vertical,
+                total_dy,
+                ..
+            } => {
                 if total_dy < 0.0 {
                     // Archive has no layout meaning - shell owns it, so just notify over IPC.
                     if let Some(ipc) = self.niri.ipc_server.as_ref() {
@@ -4488,7 +4529,11 @@ impl State {
             GestureOut::EdgeUpdate { edge, progress } => {
                 self.chronos_edge_event(edge, GesturePhase::Update, progress);
             }
-            GestureOut::EdgeEnd { edge, progress, committed } => {
+            GestureOut::EdgeEnd {
+                edge,
+                progress,
+                committed,
+            } => {
                 if !committed {
                     self.chronos_edge_event(edge, GesturePhase::Cancel, progress);
                 } else {
@@ -4662,7 +4707,14 @@ impl State {
         if was_claimed {
             let serial = SERIAL_COUNTER.next_serial();
             if let Some(handle) = self.niri.seat.get_touch() {
-                handle.up(self, &UpEvent { slot, serial, time: evt.time() });
+                handle.up(
+                    self,
+                    &UpEvent {
+                        slot,
+                        serial,
+                        time: evt.time(),
+                    },
+                );
             }
             return;
         }
