@@ -43,11 +43,41 @@ PanelWindow {
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "chronos-" + edge
 
-    Frame {
+    property real pull: 0   // 0..1 how far the open panel is dragged back toward its edge
+
+    Item {
         anchors.fill: parent
-        anchors.margins: 12
-        heading: win.heading
-        onClose: UiState.close()
-        Item { id: body; anchors.fill: parent }
+        DragHandler {
+            id: dh
+            target: null
+            xAxis.enabled: win.horiz
+            yAxis.enabled: !win.horiz
+            onActiveTranslationChanged: {
+                if (!active) return
+                const t = activeTranslation
+                const d = win.edge === "left" ? -t.x : win.edge === "right" ? t.x
+                        : win.edge === "top" ? -t.y : t.y
+                win.pull = Math.max(0, Math.min(1, d / win.size))
+            }
+            onActiveChanged: {
+                if (active) return
+                const q = win.pull
+                win.pull = 0
+                win.p = 1 - q            // hand the offset over to the window slide
+                if (q > 0.3) UiState.close()
+                settle.restart()
+            }
+        }
+        Frame {
+            anchors.fill: parent
+            anchors.margins: 12
+            heading: win.heading
+            onClose: UiState.close()
+            transform: Translate {
+                x: win.edge === "left" ? -win.pull * win.size : win.edge === "right" ? win.pull * win.size : 0
+                y: win.edge === "top" ? -win.pull * win.size : win.edge === "bottom" ? win.pull * win.size : 0
+            }
+            Item { id: body; anchors.fill: parent }
+        }
     }
 }
