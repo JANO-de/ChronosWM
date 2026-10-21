@@ -1,5 +1,5 @@
 // OSK layouts: swappable, user-editable, saved to ~/.config/chronos/osk.json
-// key = {t: c|n|m|l|shift|edit|close, l: label, k: output, s: shifted output, w: width units}
+// key fields: t=type, l=label, k=output, s=shifted, w=width
 pragma Singleton
 import QtQuick
 import Quickshell
