@@ -24,6 +24,12 @@ ShellRoot {
         function overview(open: bool): void { Ipc.overview = open }
     }
     IpcHandler {
+        target: "osk"
+        function toggle(): void { UiState.osk = !UiState.osk }
+        function show(): void { UiState.osk = true }
+        function hide(): void { UiState.osk = false }
+    }
+    IpcHandler {
         target: "theme"
         function set(name: string): void { Theme.name = name }
         function cycle(): void { Theme.cycle() }

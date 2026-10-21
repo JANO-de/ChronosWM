@@ -16,8 +16,18 @@ Item {
     Connections {
         target: UiState
         function onPanelChanged() {
-            if (UiState.panel === "left") { input.text = ""; input.forceActiveFocus() }
-            else input.focus = false
+            if (UiState.panel === "left") { input.text = ""; input.forceActiveFocus(); UiState.osk = true }
+            else { input.focus = false; UiState.osk = false }
+        }
+    }
+
+    Connections {
+        target: UiState
+        enabled: UiState.panel === "left"
+        function onKey(k) {
+            if (k === "BKSP") input.remove(Math.max(0, input.cursorPosition - 1), input.cursorPosition)
+            else if (k === "ENTER") { if (root.calc === "" && root.results.length > 0) root.launch(root.results[0]) }
+            else input.insert(input.cursorPosition, k)
         }
     }
 
@@ -32,6 +42,7 @@ Item {
             id: input
             anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter
             width: parent.width * 0.65
+            onActiveFocusChanged: if (activeFocus) UiState.osk = true
             horizontalAlignment: TextInput.AlignRight
             color: Theme.ink; font.family: Theme.mono; font.pixelSize: 14
             selectionColor: Theme.accent; selectedTextColor: Theme.bg
@@ -48,7 +59,7 @@ Item {
         text: "= " + root.calc; color: Theme.ink; font.family: Theme.mono; font.pixelSize: 16
     }
     ListView {
-        anchors { top: calcLine.bottom; topMargin: 6; left: parent.left; right: parent.right; bottom: parent.bottom }
+        anchors { top: calcLine.bottom; topMargin: 6; left: parent.left; right: parent.right; bottom: parent.bottom; bottomMargin: UiState.osk ? 250 : 0 }
         clip: true
         model: root.results
         boundsBehavior: Flickable.StopAtBounds

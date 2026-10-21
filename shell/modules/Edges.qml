@@ -9,6 +9,7 @@ Scope {
     id: root
     required property var modelData
 
+    Osk { modelData: root.modelData }
     Archive { modelData: root.modelData }
     EdgePanel { modelData: root.modelData; edge: "left"; heading: Vocab.t("spotlight"); focusable: true; IndexPanel {} }
     EdgePanel { modelData: root.modelData; edge: "right"; heading: Vocab.t("quick"); ControlsPanel {} }
