@@ -1,4 +1,5 @@
 // Chronos Terminal. Run from the repo root:  qs -p shell
+import QtQuick
 // Test without the compositor:  qs -p shell ipc call mock swipe left
 import Quickshell
 import Quickshell.Io
