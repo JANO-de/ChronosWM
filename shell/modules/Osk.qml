@@ -13,7 +13,7 @@ PanelWindow {
     readonly property int rowH: 48
     readonly property int nRows: Math.max(5, OskLayouts.rows.length)
     implicitHeight: 24 + nRows * rowH + (OskLayouts.editing ? 44 : 0) + 8
-    visible: UiState.osk || p > 0.001
+    visible: (UiState.osk && UiState.field) || p > 0.001
     color: "transparent"
     exclusiveZone: 0
     WlrLayershell.layer: WlrLayer.Overlay
@@ -22,7 +22,7 @@ PanelWindow {
 
     // terminal-style reveal: rows print in one by one, header types out
     property real p: 0
-    readonly property real goal: UiState.osk ? 1 : 0
+    readonly property real goal: (UiState.osk && UiState.field) ? 1 : 0
     // timer-driven (a hidden window gets no animation frames, which left p stuck near 0)
     Timer {
         interval: 25; repeat: true; running: Math.abs(win.p - win.goal) > 0.001

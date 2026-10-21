@@ -15,6 +15,8 @@ Column {
         warn: Sys.hasBattery && Sys.battery < 0.15 && !Sys.charging }
     DataRow { label: "silence"; value: Notifs.dnd ? "on" : "off"
         MouseArea { anchors.fill: parent; onClicked: Notifs.dnd = !Notifs.dnd } }
+    DataRow { label: "mode"; value: UiState.field ? "field" : "office"
+        MouseArea { anchors.fill: parent; onClicked: UiState.mode = UiState.field ? "office" : "field" } }
     DataRow { label: "theme"; value: Theme.name
         MouseArea { anchors.fill: parent; onClicked: Theme.cycle() } }
 }

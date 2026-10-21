@@ -30,6 +30,11 @@ ShellRoot {
         function hide(): void { UiState.osk = false }
     }
     IpcHandler {
+        target: "mode"
+        function set(name: string): void { UiState.mode = (name === "field" || name === "tablet") ? "field" : "office" }
+        function toggle(): void { UiState.mode = UiState.field ? "office" : "field" }
+    }
+    IpcHandler {
         target: "theme"
         function set(name: string): void { Theme.name = name }
         function cycle(): void { Theme.cycle() }
