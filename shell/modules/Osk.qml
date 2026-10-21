@@ -13,7 +13,7 @@ PanelWindow {
     readonly property int rowH: 48
     readonly property int nRows: Math.max(5, OskLayouts.rows.length)
     implicitHeight: 24 + nRows * rowH + (OskLayouts.editing ? 44 : 0) + 24
-    visible: p > 0.001
+    visible: UiState.osk || p > 0.001
     color: "transparent"
     exclusiveZone: 0
     WlrLayershell.layer: WlrLayer.Overlay
@@ -21,8 +21,13 @@ PanelWindow {
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
     // terminal-style reveal: rows print in one by one, header types out
-    property real p: UiState.osk ? 1 : 0
-    Behavior on p { NumberAnimation { duration: 300 } }
+    property real p: 0
+    readonly property real goal: UiState.osk ? 1 : 0
+    // timer-driven (a hidden window gets no animation frames, which left p stuck near 0)
+    Timer {
+        interval: 25; repeat: true; running: Math.abs(win.p - win.goal) > 0.001
+        onTriggered: win.p = win.goal > win.p ? Math.min(1, win.p + 0.1) : Math.max(0, win.p - 0.15)
+    }
     readonly property real steps: nRows + 1
     readonly property real shown: Math.ceil(p * steps) / steps
     onVisibleChanged: if (UiState.osk) UiState.oskH = implicitHeight
@@ -66,7 +71,9 @@ PanelWindow {
         id: b
         property string label: ""
         property bool hot: false
+        property bool wasHeld: false
         signal tapped()
+        signal held()
         Rectangle {
             anchors.fill: parent; anchors.margins: 2
             color: ma.pressed || b.hot ? Theme.ink : "transparent"
@@ -77,13 +84,18 @@ PanelWindow {
                 font.family: Theme.mono; font.pixelSize: 14
             }
         }
-        MouseArea { id: ma; anchors.fill: parent; preventStealing: true; onClicked: b.tapped() }
+        MouseArea {
+            id: ma; anchors.fill: parent; preventStealing: true
+            onPressed: b.wasHeld = false
+            onPressAndHold: { b.wasHeld = true; b.held() }
+            onClicked: if (!b.wasHeld) b.tapped()
+        }
     }
 
     Item {
         id: clipper
         anchors { left: parent.left; right: parent.right; top: parent.top }
-        height: parent.height * win.shown
+        height: win.implicitHeight * win.shown
         clip: true
         Rectangle {
             width: parent.width; height: win.implicitHeight
@@ -141,10 +153,15 @@ PanelWindow {
             x: 8; y: 24 + (OskLayouts.editing ? 44 : 0); width: parent.width - 16
             Repeater {
                 model: OskLayouts.rows
-                Row {
+                Item {
+                  id: rowWrap
+                  required property var modelData
+                  required property int index
+                  width: kb.width; height: win.rowH
+                  Row {
                     id: rowItem
-                    required property var modelData
-                    required property int index
+                    property var modelData: rowWrap.modelData
+                    property int index: rowWrap.index
                     readonly property real avail: kb.width
                     readonly property real sum: modelData.reduce((a, k) => a + (k.w || 1), 0)
                     readonly property real unit: Math.min(avail / 10, avail / Math.max(1, sum))
@@ -158,11 +175,13 @@ PanelWindow {
                             width: rowItem.unit * (modelData.w || 1); height: win.rowH
                             label: win.label(modelData)
                             hot: win.active(modelData, rowItem.index, index)
-                            onTapped: OskLayouts.editing ? OskLayouts.select(rowItem.index, index) : win.fire(modelData)
+                            onTapped: { if (OskLayouts.editing) OskLayouts.select(rowItem.index, index); else if (modelData.t !== "edit") win.fire(modelData) }
+                            onHeld: if (modelData.t === "edit" && !OskLayouts.editing) OskLayouts.setEditing(true)
                         }
                     }
                     // empty row placeholder while editing
                     Text { visible: rowItem.modelData.length === 0; text: "(empty row)"; color: Theme.dim; font.family: Theme.mono; font.pixelSize: 12 }
+                  }
                 }
             }
         }

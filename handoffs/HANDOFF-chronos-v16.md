@@ -128,3 +128,10 @@ Windows (Frame) stay plain rectangles; ASCII only for text, bars, icons.
 - Implemented (UNTESTED): `services/OskLayouts.qml` (singleton: data, edit ops, defaults qwerty/symbols/fn, saved to `~/.config/chronos/osk.json`), `modules/Osk.qml` (UI, edit toolbar, key picker), `UiState.osk/oskH/key`. EDIT key opens toolbar: select key, `< > ^ v` move, `W- W+` width, `SET` replace, `ADD` insert after, `DEL`, `ROW+`, `LAY> NEW DUP LAY- RESET`, `[DONE]`.
 - Outside Index, keys go through `wtype` (needs `pkgs.wtype` in home.packages). Manual toggle: `qs ipc call osk toggle|show|hide`. Auto-show on other apps' text fields is NOT possible yet (needs a niri text-input hook).
 - Later: drag-and-drop key moving, layout rename, per-key shifted output editing, long-press alternates, key repeat on backspace.
+
+### Status at end of session
+- OSK first run: layouts/animation showed but looked cropped, and the edit toolbar appeared on its own. Patched (UNTESTED): EDIT is now long-press only (a swipe-release tap likely toggled it); clip height uses `win.implicitHeight`; rows wrapped in Items. If still cropped, get a screenshot (command below) and check `implicitHeight`/layer-shell sizing.
+- Screenshot from [DESKTOP]:
+  `ssh jano@192.168.0.115 'export XDG_RUNTIME_DIR=/run/user/1000 WAYLAND_DISPLAY=wayland-1 NIRI_SOCKET=$(ls /run/user/1000/niri.*.sock | head -1); /run/current-system/sw/bin/niri msg action screenshot-screen'`
+  then `scp "jano@192.168.0.115:$(ssh jano@192.168.0.115 'ls -t ~/Pictures/Screenshots/* | head -1')" ~/shot.png` and upload `~/shot.png` to the chat.
+- Next: verify OSK fixes, tablet-mode decision, cursor hide, palm/dead zones, theme polish, retire dynisland.
