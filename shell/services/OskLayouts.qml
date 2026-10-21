@@ -108,25 +108,25 @@ Singleton {
         const edit = { t: "edit", l: "EDIT", w: 1 }
         const close = { t: "close", l: "[X]", w: 1 }
         return [
-            { name: "qwerty", rows: [
-                chars("1234567890", "!@#$%^&*()"),
-                chars("qwertyuiop"),
-                [].concat(chars("asdfghjkl"), [kn("<-", "BackSpace")]),
-                [].concat([shift], chars("zxcvbnm"), [kn("ENTER", "Return", 1.5)]),
-                [kl("123", "symbols"), km("CTRL", "ctrl"), kc("SPACE", " ", "", 3), kc(","), kc("."), kl("FN", "fn"), edit, close]
+            { name: "es", rows: [
+                chars("1234567890'¡", "!\"·$%&/()=?¿"),
+                [].concat(chars("qwertyuiop"), [kc("´", "´", "¨"), kc("+", "+", "*")]),
+                [].concat(chars("asdfghjklñ"), [kn("<-", "BackSpace", 2)]),
+                [].concat([shift], chars("zxcvbnm"), [kc(",", ",", ";"), kc(".", ".", ":")], [kn("ENTER", "Return", 1.5)]),
+                [kl("123", "symbols"), km("CTRL", "ctrl"), kc("@"), kc("SPACE", " ", "", 4), kc("-", "-", "_"), kl("FN", "fn"), edit, close]
             ] },
             { name: "symbols", rows: [
                 chars("1234567890"),
                 chars("@#$%&*-+=/"),
                 [].concat(chars("()[]{}<>_|")),
-                [].concat([kl("ABC", "qwerty", 1.5)], chars("!?:;\"'~"), [kn("<-", "BackSpace", 1.5)]),
+                [].concat([kl("ABC", "es", 1.5)], chars("!?:;\"'~"), [kn("<-", "BackSpace", 1.5)]),
                 [kn("TAB", "Tab"), kc("SPACE", " ", "", 4), kc(","), kc("."), kc("^"), kc("`"), edit]
             ] },
             { name: "fn", rows: [
                 [kn("ESC", "Escape")].concat(["1","2","3","4","5","6","7","8","9"].map(n => kn("F" + n, "F" + n))),
                 [kn("F10", "F10"), kn("F11", "F11"), kn("F12", "F12"), kn("INS", "Insert"), kn("DEL", "Delete"), kn("HOME", "Home"), kn("END", "End"), kn("PGUP", "Page_Up"), kn("PGDN", "Page_Down"), kn("TAB", "Tab")],
                 [km("CTRL", "ctrl"), km("ALT", "alt"), km("SUPER", "logo"), kn("LEFT", "Left"), kn("DOWN", "Down"), kn("UP", "Up"), kn("RIGHT", "Right")],
-                [kl("ABC", "qwerty", 2), kn("ENTER", "Return", 2), kn("<-", "BackSpace", 2), edit, close]
+                [kl("ABC", "es", 2), kn("ENTER", "Return", 2), kn("<-", "BackSpace", 2), edit, close]
             ] }
         ]
     }

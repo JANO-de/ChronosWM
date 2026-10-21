@@ -12,7 +12,7 @@ PanelWindow {
     anchors { left: true; right: true; bottom: true }
     readonly property int rowH: 48
     readonly property int nRows: Math.max(5, OskLayouts.rows.length)
-    implicitHeight: 24 + nRows * rowH + 44 + 24
+    implicitHeight: 24 + nRows * rowH + (OskLayouts.editing ? 44 : 0) + 8
     visible: UiState.osk || p > 0.001
     color: "transparent"
     exclusiveZone: 0
