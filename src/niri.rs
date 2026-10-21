@@ -13,6 +13,7 @@ use std::{env, mem, thread};
 use _server_decoration::server::org_kde_kwin_server_decoration_manager::Mode as KdeDecorationsMode;
 use anyhow::{bail, ensure, Context};
 use calloop::futures::Scheduler;
+use chronos_gesture_core::Recognizer as TouchGestureRecognizer;
 use niri_config::debug::PreviewRender;
 use niri_config::output::MaxBpc;
 use niri_config::window_rule::VrrRule;
@@ -149,7 +150,6 @@ use crate::input::{
     TabletData,
 };
 use crate::ipc::server::IpcServer;
-use chronos_gesture_core::Recognizer as TouchGestureRecognizer;
 use crate::layer::mapped::LayerSurfaceRenderElement;
 use crate::layer::MappedLayer;
 use crate::layout::tile::TileRenderElement;
