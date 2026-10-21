@@ -9,6 +9,7 @@ Scope {
     id: root
     required property var modelData
     SystemClock { id: clock; precision: SystemClock.Seconds }
+    Archive { modelData: root.modelData }
 
     EdgePanel {
         modelData: root.modelData; edge: "left"; heading: Vocab.t("spotlight")

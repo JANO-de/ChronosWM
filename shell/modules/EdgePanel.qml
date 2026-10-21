@@ -15,8 +15,14 @@ PanelWindow {
 
     readonly property bool horiz: edge === "left" || edge === "right"
     readonly property bool dragging: Ipc.edge === edge
-    property real p: dragging ? Math.min(Ipc.progress, 1) : (UiState.panel === edge ? 1 : 0)
-    Behavior on p { NumberAnimation { duration: win.dragging ? 0 : 220; easing.type: Easing.OutCubic } }
+    readonly property real target: UiState.panel === edge ? 1 : 0
+    property real p: 0   // 0 hidden .. 1 open; follows the finger while dragging, then animates to target
+    // follow the finger (not when the panel is open and being swiped closed)
+    Binding { target: win; property: "p"; value: Math.min(Ipc.progress, 1)
+              when: win.dragging && win.target === 0; restoreMode: Binding.RestoreNone }
+    onDraggingChanged: if (!dragging) settle.restart()
+    onTargetChanged: if (!dragging) settle.restart()
+    NumberAnimation { id: settle; target: win; property: "p"; to: win.target; duration: 220; easing.type: Easing.OutCubic }
 
     screen: modelData
     anchors {

@@ -4468,7 +4468,7 @@ impl State {
                 if let Some(o) = self
                     .niri
                     .layout
-                    .workspace_switch_gesture_update(dy, timestamp, false)
+                    .workspace_switch_gesture_update(-dy, timestamp, false)
                 {
                     if let Some(output) = o {
                         self.niri.queue_redraw(&output);

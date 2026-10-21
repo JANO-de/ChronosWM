@@ -1,5 +1,4 @@
 // Chronos Terminal. Run from the repo root:  qs -p shell
-import QtQuick
 // Test without the compositor:  qs -p shell ipc call mock swipe left
 import Quickshell
 import Quickshell.Io
@@ -21,6 +20,7 @@ ShellRoot {
             Ipc.feed({ EdgeSwipe: { edge: name, phase: "End", progress: 1 } })
         }
         function timeline(n: int): void { Ipc.timeline = n }
+        function overview(open: bool): void { Ipc.overview = open }
     }
     IpcHandler {
         target: "theme"

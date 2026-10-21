@@ -10,6 +10,7 @@ Singleton {
     property string edge: ""         // edge being dragged ("" = none)
     property real progress: 0        // 1.0 = 160 px inward
     property int timeline: 1         // focused workspace idx
+    property bool overview: false    // niri Overview (= Archive) open
     readonly property real overviewAt: 1.8   // bottom swipe past this = compositor Overview
 
     function feed(ev) {
@@ -32,6 +33,11 @@ Singleton {
             onRead: line => {
                 if (line.indexOf("EdgeSwipe") >= 0 || line.indexOf("GestureTriggered") >= 0) {
                     try { root.feed(JSON.parse(line)) } catch (e) {}
+                } else if (line.indexOf("OverviewOpenedOrClosed") >= 0) {
+                    try {
+                        root.overview = JSON.parse(line).OverviewOpenedOrClosed.is_open
+                        if (root.overview) UiState.close()
+                    } catch (e) {}
                 } else if (line.indexOf("Workspace") >= 0) {
                     wsDebounce.restart()
                 }
