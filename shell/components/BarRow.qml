@@ -1,4 +1,4 @@
-// LABEL ....... [#####     ]   drag or tap the bar to set 0..1
+// LABEL .... [████░░░░░░] 62%   drag or tap to set 0..1 (does not move the panel)
 import QtQuick
 import qs.services
 
@@ -11,27 +11,37 @@ Item {
     width: parent ? parent.width : 200
     height: 40
 
+    readonly property color col: enabled ? Theme.ink : Theme.dim
+    TextMetrics { id: tm; font.family: Theme.mono; font.pixelSize: 14; text: "█" }
+    readonly property real cw: Math.max(1, tm.advanceWidth)
+    readonly property int cells: Math.max(6, Math.floor(width * 0.5 / cw) - 7)
+    readonly property int filled: Math.round(Math.max(0, Math.min(1, value)) * cells)
+
     Text {
         anchors.verticalCenter: parent.verticalCenter
         text: root.label.toUpperCase()
-        color: Theme.ink; font.family: Theme.mono; font.pixelSize: 14
+        color: root.col; font.family: Theme.mono; font.pixelSize: 14
     }
-    Rectangle {
-        id: track
+    Text {
+        id: bar
         anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter
-        width: parent.width * 0.55; height: 22
-        color: "transparent"; border.color: root.enabled ? Theme.ink : Theme.dim; border.width: 1
-        Rectangle {
-            x: 3; y: 3; height: parent.height - 6
-            width: Math.max(0, (parent.width - 6) * root.value)
-            color: root.enabled ? Theme.ink : Theme.dim
-        }
+        text: "[" + "█".repeat(root.filled) + "░".repeat(root.cells - root.filled) + "] "
+              + String(Math.round(root.value * 100)).padStart(3, " ") + "%"
+        color: root.col; font.family: Theme.mono; font.pixelSize: 14
         MouseArea {
-            anchors.fill: parent
+            anchors.fill: parent; anchors.margins: -10
             enabled: root.enabled
-            onPressed: mouse => root.moved(Math.max(0, Math.min(1, mouse.x / width)))
-            onPositionChanged: mouse => root.moved(Math.max(0, Math.min(1, mouse.x / width)))
+            preventStealing: true   // keep the drag; the panel's swipe handler must not take it
+            function setv(mx) {
+                const x0 = 10 + root.cw, w = root.cells * root.cw
+                root.moved(Math.max(0, Math.min(1, (mx - x0) / w)))
+            }
+            onPressed: mouse => setv(mouse.x)
+            onPositionChanged: mouse => setv(mouse.x)
         }
     }
-    Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.dim }
+    Text {
+        anchors.bottom: parent.bottom; width: parent.width; clip: true
+        text: "·".repeat(400); color: Theme.dim; font.family: Theme.mono; font.pixelSize: 10
+    }
 }

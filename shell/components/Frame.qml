@@ -9,32 +9,48 @@ Item {
     default property alias content: slot.data
     readonly property int headerH: 32
 
-    Rectangle { anchors.fill: parent; color: Theme.bg; border.color: Theme.accent; border.width: 1 }
-    Rectangle { x: 0; y: root.headerH; width: parent.width; height: 1; color: Theme.accent }
-    Repeater {
-        model: 4
-        Rectangle {
-            width: 5; height: 5; color: Theme.accent
-            x: (index & 1) ? root.width - 3 : -2
-            y: (index & 2) ? root.height - 3 : -2
-        }
-    }
+    TextMetrics { id: tm; font.family: Theme.mono; font.pixelSize: 14; text: "═" }
+    readonly property int cols: Math.max(10, Math.floor(width / Math.max(1, tm.advanceWidth)))
+    readonly property int rows: Math.max(3, Math.floor(height / 18))
+    readonly property string title: " " + heading.toUpperCase() + " "
+    Rectangle { anchors.fill: parent; color: Theme.bg }
+    // top border with title:  ╔═ TITLE ═════════ [X]╗
     Text {
-        x: 12; height: root.headerH; verticalAlignment: Text.AlignVCenter
-        text: root.heading.toUpperCase()
-        color: Theme.ink; font.family: Theme.mono; font.pixelSize: 14; font.letterSpacing: 1.5
+        x: 0; y: 0; height: root.headerH; verticalAlignment: Text.AlignVCenter
+        text: "╔═" + root.title + "═".repeat(Math.max(0, root.cols - root.title.length - 8)) + "╗"
+        color: Theme.accent; font.family: Theme.mono; font.pixelSize: 14
     }
     Text {
         id: closeBtn
-        anchors.right: parent.right; anchors.rightMargin: 12
+        anchors.right: parent.right; anchors.rightMargin: tm.advanceWidth * 2
         height: root.headerH; verticalAlignment: Text.AlignVCenter
-        text: "[X]"; color: Theme.dim; font.family: Theme.mono; font.pixelSize: 14
+        text: "[X]"; color: Theme.ink; font.family: Theme.mono; font.pixelSize: 14
         MouseArea { anchors.fill: parent; anchors.margins: -12; onClicked: root.close() }
+    }
+    // divider ╟────╢
+    Text {
+        x: 0; y: root.headerH - 4
+        text: "╟" + "─".repeat(root.cols - 2) + "╢"
+        color: Theme.accent; font.family: Theme.mono; font.pixelSize: 14
+    }
+    // side walls
+    Text {
+        x: 0; y: root.headerH + 10; width: tm.advanceWidth; height: parent.height - root.headerH - 30; clip: true
+        text: "║\n".repeat(root.rows); color: Theme.accent; font.family: Theme.mono; font.pixelSize: 14; lineHeight: 18; lineHeightMode: Text.FixedHeight
+    }
+    Text {
+        x: parent.width - tm.advanceWidth; y: root.headerH + 10; width: tm.advanceWidth; height: parent.height - root.headerH - 30; clip: true
+        text: "║\n".repeat(root.rows); color: Theme.accent; font.family: Theme.mono; font.pixelSize: 14; lineHeight: 18; lineHeightMode: Text.FixedHeight
+    }
+    Text {
+        x: 0; y: parent.height - 22
+        text: "╚" + "═".repeat(root.cols - 2) + "╝"
+        color: Theme.accent; font.family: Theme.mono; font.pixelSize: 14
     }
     Item {
         id: slot
-        x: 12; y: root.headerH + 12
-        width: parent.width - 24; height: parent.height - root.headerH - 24
+        x: 16; y: root.headerH + 12
+        width: parent.width - 32; height: parent.height - root.headerH - 40
     }
     Scanlines { anchors.fill: parent; visible: Theme.scanlines }
 }
