@@ -12,7 +12,7 @@ PanelWindow {
     anchors { left: true; right: true; bottom: true }
     readonly property int rowH: 48
     readonly property int nRows: Math.max(5, OskLayouts.rows.length)
-    implicitHeight: 24 + nRows * rowH + (OskLayouts.editing ? 44 : 0) + 24
+    implicitHeight: 24 + nRows * rowH + 44 + 24
     visible: UiState.osk || p > 0.001
     color: "transparent"
     exclusiveZone: 0
@@ -32,6 +32,9 @@ PanelWindow {
     readonly property real shown: Math.ceil(p * steps) / steps
     onVisibleChanged: if (UiState.osk) UiState.oskH = implicitHeight
     Binding { target: UiState; property: "oskH"; value: win.implicitHeight; when: UiState.osk }
+
+    // always start with edit mode off
+    Connections { target: UiState; function onOskChanged() { OskLayouts.editing = false; OskLayouts.palette = "" } }
 
     property bool shift: false
     property var mods: []
@@ -95,8 +98,7 @@ PanelWindow {
     Item {
         id: clipper
         anchors { left: parent.left; right: parent.right; top: parent.top }
-        height: win.implicitHeight * win.shown
-        clip: true
+        height: win.implicitHeight
         Rectangle {
             width: parent.width; height: win.implicitHeight
             color: Theme.bg; border.color: Theme.accent; border.width: 1
@@ -106,7 +108,7 @@ PanelWindow {
             id: head
             x: 12; y: 4; height: 20
             readonly property string full: "> KEYBOARD :: " + OskLayouts.layout.name.toUpperCase()
-                + (OskLayouts.editing ? " :: EDIT" : "") + (win.mods.length ? " :: " + win.mods.join("+").toUpperCase() : "")
+                + (OskLayouts.editing ? " :: EDIT" : "") + " :: " + Math.round(win.width) + "x" + Math.round(win.height) + (win.mods.length ? " :: " + win.mods.join("+").toUpperCase() : "")
             text: full.substring(0, Math.round(Math.min(1, win.p * 1.5) * full.length)) + (blink.on ? "█" : " ")
             color: Theme.ink; font.family: Theme.mono; font.pixelSize: 13
             Timer { id: blink; property bool on: true; interval: 500; running: win.visible; repeat: true; onTriggered: on = !on }
@@ -155,6 +157,7 @@ PanelWindow {
                 model: OskLayouts.rows
                 Item {
                   id: rowWrap
+                  visible: index < Math.ceil(win.p * win.nRows)
                   required property var modelData
                   required property int index
                   width: kb.width; height: win.rowH
