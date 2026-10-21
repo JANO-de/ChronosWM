@@ -17,7 +17,7 @@ Singleton {
     readonly property color ink: name === "office" ? "#1d1b16" : accent
     readonly property color dim: Qt.alpha(ink, 0.45)
     readonly property color warn: "#ff6a4d"
-    readonly property string mono: "IBM Plex Mono"
+    readonly property string mono: "Departure Mono"
 
     function cycle() {
         const n = ["terminal", "office", "dreamcore"]

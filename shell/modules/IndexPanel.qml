@@ -55,15 +55,14 @@ Item {
         delegate: Item {
             required property var modelData
             width: ListView.view.width; height: 44
-            Image {
+            AsciiIcon {
                 id: ico
                 x: 0; anchors.verticalCenter: parent.verticalCenter
-                width: 28; height: 28; sourceSize: Qt.size(56, 56)
-                source: Apps.iconFor(modelData.entry)
-                onStatusChanged: if (status === Image.Error && source != Quickshell.iconPath("application-x-executable")) source = Quickshell.iconPath("application-x-executable")
+                width: 44; size: 12
+                name: modelData.name + " " + (modelData.entry.id || "")
             }
             Text {
-                anchors.left: ico.right; anchors.leftMargin: 12; anchors.verticalCenter: parent.verticalCenter
+                anchors.left: ico.right; anchors.leftMargin: 8; anchors.verticalCenter: parent.verticalCenter
                 anchors.right: parent.right; elide: Text.ElideRight
                 text: modelData.name.toUpperCase()
                 color: Theme.ink; font.family: Theme.mono; font.pixelSize: 14

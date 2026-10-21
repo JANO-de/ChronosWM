@@ -23,15 +23,14 @@ Item {
                 border.color: modelData.is_focused ? Theme.ink : Theme.dim
                 border.width: modelData.is_focused ? 2 : 1
             }
-            Image {
+            AsciiIcon {
                 id: ico
                 anchors.horizontalCenter: parent.horizontalCenter; y: 12
-                width: 48; height: 48; sourceSize: Qt.size(96, 96)
-                source: Windows.iconFor(modelData.app_id)
-                onStatusChanged: if (status === Image.Error && source != Quickshell.iconPath("application-x-executable")) source = Quickshell.iconPath("application-x-executable")
+                size: 16
+                name: modelData.app_id || modelData.title || ""
             }
             Text {
-                anchors { left: parent.left; right: parent.right; top: ico.bottom; topMargin: 8; margins: 6 }
+                anchors { left: parent.left; right: parent.right; top: ico.bottom; topMargin: 14; margins: 6 }
                 horizontalAlignment: Text.AlignHCenter; elide: Text.ElideRight
                 text: (modelData.title || modelData.app_id || "").toUpperCase()
                 color: Theme.ink; font.family: Theme.mono; font.pixelSize: 11
