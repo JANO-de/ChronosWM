@@ -40,6 +40,8 @@ Singleton {
                     } catch (e) {}
                 } else if (line.indexOf("Workspace") >= 0) {
                     wsDebounce.restart()
+                } else if (line.indexOf("Window") >= 0) {
+                    Windows.refresh()
                 }
             }
         }

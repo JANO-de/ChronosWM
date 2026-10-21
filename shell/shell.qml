@@ -7,7 +7,7 @@ import qs.services
 import qs.modules
 
 ShellRoot {
-    Component.onCompleted: Ipc.ready
+    Component.onCompleted: { Ipc.ready; Notifs.ready }
 
     Variants { model: Quickshell.screens; Edges {} }
 

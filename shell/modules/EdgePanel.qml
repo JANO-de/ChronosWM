@@ -11,6 +11,7 @@ PanelWindow {
     property string edge: "left"
     property string heading: ""
     property int size: 360
+    property bool focusable: false   // takes keyboard focus while open (Index)
     default property alias content: body.data
 
     readonly property bool horiz: edge === "left" || edge === "right"
@@ -42,6 +43,7 @@ PanelWindow {
     exclusiveZone: 0
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "chronos-" + edge
+    WlrLayershell.keyboardFocus: focusable && UiState.panel === edge ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
 
     property real pull: 0   // 0..1 how far the open panel is dragged back toward its edge
 
