@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Chronos Roadmap v17 (visual)</title>
+<style>
+:root{--bg:#efe6cf;--panel:#f6efdc;--ink:#3b3226;--dim:#8a7d65;--line:#b9a98a;--accent:#a4651f;color-scheme:light;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#05070d;--panel:#080b14;--ink:#b9b6ff;--dim:#6a69a3;--line:#2c2e57;--accent:#8f8cff;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#05070d;--panel:#080b14;--ink:#b9b6ff;--dim:#6a69a3;--line:#2c2e57;--accent:#8f8cff;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 ui-monospace,"SF Mono",Menlo,Consolas,"Courier New",monospace;padding:16px}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.07) 0 1px,transparent 1px 3px)}
+main{max-width:1100px;margin:0 auto}
+header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+h1{font-size:18px;margin:0;letter-spacing:.12em;color:var(--accent)}
+.sub{color:var(--dim);font-size:12px}
+button{font:inherit;font-size:12px;color:var(--ink);background:transparent;border:1px solid var(--line);padding:6px 10px;cursor:pointer}
+button:hover{border-color:var(--accent);color:var(--accent)}
+.frame{position:relative;border:1px solid var(--line);background:var(--panel);padding:16px;margin-bottom:22px}
+.frame::before,.frame::after{content:"";position:absolute;width:10px;height:10px;border:2px solid var(--accent)}
+.frame::before{top:-2px;left:-2px;border-right:0;border-bottom:0}
+.frame::after{bottom:-2px;right:-2px;border-left:0;border-top:0}
+h2{font-size:12px;letter-spacing:.18em;color:var(--accent);margin:0 0 12px;font-weight:600}
+.flow{display:grid;grid-template-columns:repeat(5,1fr);gap:22px}
+.tier{position:relative;border:1px solid var(--line);padding:12px}
+.tier:not(:last-child)::after{content:"\25B6";position:absolute;right:-17px;top:50%;color:var(--accent);font-size:11px}
+.tier .code{font-size:11px;color:var(--dim);letter-spacing:.15em}
+.tier .name{font-weight:700;margin:2px 0}
+.tier .n{font-size:30px;line-height:1.1;color:var(--accent)}
+.tier .n small{font-size:11px;color:var(--dim)}
+.bar{height:8px;border:1px solid var(--line);margin:8px 0 10px}
+.bar b{display:block;height:100%;background:var(--accent)}
+.row{display:flex;align-items:baseline;gap:6px;font-size:12px}
+.row i{flex:1;border-bottom:1px dotted var(--dim)}
+.row span:last-child{color:var(--accent)}
+.tier p{margin:10px 0 0;font-size:12px;color:var(--dim)}
+.done{border-style:dashed}
+.lbar{margin-top:6px;font-size:11px;color:var(--dim)}
+@media (max-width:900px){
+  .flow{grid-template-columns:1fr;gap:26px}
+  .tier:not(:last-child)::after{content:"\25BC";right:auto;left:50%;top:auto;bottom:-20px}
+}
+ol.steps{list-style:none;margin:0;padding:0 0 0 14px;border-left:1px solid var(--line)}
+ol.steps li{position:relative;display:flex;gap:10px;align-items:baseline;padding:5px 0 5px 14px;flex-wrap:wrap}
+ol.steps li::before{content:"";position:absolute;left:-19px;top:11px;width:9px;height:9px;background:var(--bg);border:1px solid var(--accent)}
+ol.steps li:first-child::before{background:var(--accent)}
+.k{color:var(--accent);min-width:2ch}
+.tag{font-size:11px;color:var(--dim);border:1px solid var(--line);padding:0 6px}
+.chains{display:grid;gap:10px}
+.chain{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px}
+.chain span.nd{border:1px solid var(--line);padding:2px 8px;font-size:12px}
+.chain span.ar{color:var(--accent)}
+.chain em{font-style:normal;font-size:11px;color:var(--dim);margin-right:4px;min-width:11ch}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+@media (max-width:900px){.two{grid-template-columns:1fr}}
+ul.q{margin:0;padding:0;list-style:none}
+ul.q li{padding:3px 0}
+ul.q li::before{content:"? ";color:var(--accent)}
+footer{color:var(--dim);font-size:12px;margin-top:8px}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <div>
+    <h1>CHRONOS :: ROADMAP v17</h1>
+    <div class="sub">95 items in 5 tiers + what is already done &middot; 2026-10-21</div>
+  </div>
+  <button id="hue" type="button">[ HUE: violet ]</button>
+</header>
+
+<section class="frame">
+  <h2>PATH &mdash; FROM WORKING SHELL TO DAILY DRIVER TO DREAM</h2>
+  <div class="flow">
+    <div class="tier done">
+      <div class="code">TIER 0</div><div class="name">DONE</div>
+      <div class="n">7<small> areas</small></div>
+      <div class="bar"><b style="width:100%"></b></div>
+      <div class="row"><span>Stack + repo</span><i></i><span>ok</span></div>
+      <div class="row"><span>Theme + hues</span><i></i><span>ok</span></div>
+      <div class="row"><span>Edge gestures</span><i></i><span>ok</span></div>
+      <div class="row"><span>Panels</span><i></i><span>ok</span></div>
+      <div class="row"><span>OSK es</span><i></i><span>ok</span></div>
+      <div class="row"><span>Office/Field</span><i></i><span>ok</span></div>
+      <div class="row"><span>Cursor hide</span><i></i><span>ok</span></div>
+      <p>Untested: 4f quick-switch, 4f-up Archive.</p>
+    </div>
+    <div class="tier">
+      <div class="code">TIER 1</div><div class="name">DAILY DRIVER</div>
+      <div class="n">29<small> items</small></div>
+      <div class="bar"><b style="width:97%"></b></div>
+      <div class="row"><span>Session + security</span><i></i><span>7</span></div>
+      <div class="row"><span>Input + Field</span><i></i><span>6</span></div>
+      <div class="row"><span>Connectivity + media</span><i></i><span>5</span></div>
+      <div class="row"><span>Daily tools</span><i></i><span>11</span></div>
+      <div class="lbar">hard (L): 3</div>
+      <p>Clearance lock, palm rejection, rotation, OSK auto-show, wifi and BT pickers, Capture, Ledger, retire dynisland.</p>
+    </div>
+    <div class="tier">
+      <div class="code">TIER 2</div><div class="name">COMFORTABLE</div>
+      <div class="n">30<small> items</small></div>
+      <div class="bar"><b style="width:100%"></b></div>
+      <div class="row"><span>Window mgmt</span><i></i><span>13</span></div>
+      <div class="row"><span>Shell panels</span><i></i><span>11</span></div>
+      <div class="row"><span>Pen + OSK v2</span><i></i><span>6</span></div>
+      <div class="lbar">hard (L): 6</div>
+      <p>Cache, Dossier switcher, named Timelines, Index v2, Archive v2, Telemetry, pen and Markup.</p>
+    </div>
+    <div class="tier">
+      <div class="code">TIER 3</div><div class="name">THEME POLISH</div>
+      <div class="n">16<small> items</small></div>
+      <div class="bar"><b style="width:53%"></b></div>
+      <div class="row"><span>CRT + dither</span><i></i><span>4</span></div>
+      <div class="row"><span>Chrome + ASCII</span><i></i><span>4</span></div>
+      <div class="row"><span>Themes + tokens</span><i></i><span>4</span></div>
+      <div class="row"><span>Boot + sound + a11y</span><i></i><span>4</span></div>
+      <div class="lbar">hard (L): 0</div>
+      <p>Glow and grain with a GPU cost check, GTK/Qt theming, boot sequence, accessibility.</p>
+    </div>
+    <div class="tier">
+      <div class="code">TIER 4</div><div class="name">BACKROOMS</div>
+      <div class="n">11<small> items</small></div>
+      <div class="bar"><b style="width:37%"></b></div>
+      <div class="row"><span>Wallpapers + hum</span><i></i><span>2</span></div>
+      <div class="row"><span>Idle + flicker</span><i></i><span>3</span></div>
+      <div class="row"><span>Lock dossier</span><i></i><span>2</span></div>
+      <div class="row"><span>Glitches + eggs</span><i></i><span>4</span></div>
+      <div class="lbar">hard (L): 0</div>
+      <p>Dithered corridors, odd idle text, screensaver, classified Clearance.</p>
+    </div>
+  </div>
+</section>
+
+<section class="frame">
+  <h2>PLATFORM LANE (runs alongside every tier) &mdash; 9 ITEMS</h2>
+  <div class="chain">
+    <span class="nd">CI + flake check</span><span class="nd">dependabot triage</span><span class="nd">QML smoke tests</span>
+    <span class="nd">debug overlay</span><span class="nd">niri rebase</span><span class="nd">docs + help</span>
+    <span class="nd">config backup</span><span class="nd">release tags</span><span class="nd">per-host defaults</span>
+  </div>
+</section>
+
+<div class="two">
+<section class="frame">
+  <h2>NEXT UP &mdash; IN ORDER</h2>
+  <ol class="steps">
+    <li><span class="k">01</span>Test 4f quick-switch and Archive event <span class="tag">1.15</span></li>
+    <li><span class="k">02</span>Retire dynisland, safe-mode fallback <span class="tag">1.40 1.07</span></li>
+    <li><span class="k">03</span>Palm rejection, dead zones, live gesture settings <span class="tag">1.10 1.14</span></li>
+    <li><span class="k">04</span>Rotation <span class="tag">1.11</span></li>
+    <li><span class="k">05</span>OSK auto-show, Type Cover auto mode <span class="tag">1.12 1.13</span></li>
+    <li><span class="k">06</span>Clearance, idle chain, power menu <span class="tag">1.01&ndash;1.03</span></li>
+    <li><span class="k">07</span>Wifi, Bluetooth, audio pickers <span class="tag">1.20&ndash;1.22</span></li>
+    <li><span class="k">08</span>Capture and Ledger <span class="tag">1.30 1.31</span></li>
+    <li><span class="k">09</span>Window rules, Dock v2 <span class="tag">1.37 1.38</span></li>
+    <li><span class="k">10</span>Theme tokens, then CRT effects <span class="tag">3.01 3.02</span></li>
+  </ol>
+</section>
+
+<section class="frame">
+  <h2>DEPENDENCIES &mdash; WHAT UNLOCKS WHAT</h2>
+  <div class="chains">
+    <div class="chain"><em>touch</em><span class="nd">Palm rejection</span><span class="ar">&rarr;</span><span class="nd">Pen</span><span class="ar">&rarr;</span><span class="nd">Markup</span></div>
+    <div class="chain"><em>orientation</em><span class="nd">Rotation</span><span class="ar">&rarr;</span><span class="nd">Auto Field</span><span class="ar">&rarr;</span><span class="nd">OSK v2</span></div>
+    <div class="chain"><em>text input</em><span class="nd">Text-input hook</span><span class="ar">&rarr;</span><span class="nd">OSK auto-show</span><span class="ar">&rarr;</span><span class="nd">Lock PIN</span></div>
+    <div class="chain"><em>session</em><span class="nd">Clearance</span><span class="ar">&rarr;</span><span class="nd">Idle chain</span><span class="ar">&rarr;</span><span class="nd">Power menu</span></div>
+    <div class="chain"><em>timelines</em><span class="nd">Named Timelines</span><span class="ar">&rarr;</span><span class="nd">Archive v2</span><span class="ar">&rarr;</span><span class="nd">Session restore</span></div>
+    <div class="chain"><em>look</em><span class="nd">Theme tokens</span><span class="ar">&rarr;</span><span class="nd">CRT shaders</span><span class="ar">&rarr;</span><span class="nd">Dreamcore</span></div>
+    <div class="chain"><em>theming</em><span class="nd">Theme tokens</span><span class="ar">&rarr;</span><span class="nd">GTK/Qt/terminal</span></div>
+  </div>
+</section>
+</div>
+
+<section class="frame">
+  <h2>OPEN DECISIONS</h2>
+  <ul class="q">
+    <li>4f up: toggle niri&rsquo;s Overview, or open a shell panel?</li>
+    <li>Dock: pinned apps, only running windows, or both?</li>
+    <li>Greeter: SDDM theme or greetd with a Quickshell greeter?</li>
+    <li>Approve new words: Ledger, Capture, Transmit, Telemetry, Cache, Redaction?</li>
+    <li>CRT effects GPU budget on the Surface: always, plugged in only, or off in Field?</li>
+  </ul>
+</section>
+<footer>Full item list: the Chronos Roadmap v17 doc. Tap the HUE button to preview another Timeline colour.</footer>
+</main>
+<script>
+(function(){
+  var H=[["violet","#8f8cff"],["teal","#6fd0c8"],["amber","#e0961f"],["magenta","#e45fb8"],["orange","#e8742a"]];
+  var i=0,b=document.getElementById("hue");
+  b.addEventListener("click",function(){
+    i=(i+1)%H.length;
+    document.documentElement.style.setProperty("--accent",H[i][1]);
+    b.textContent="[ HUE: "+H[i][0]+" ]";
+  });
+})();
+</script>
+</body>
+</html>
